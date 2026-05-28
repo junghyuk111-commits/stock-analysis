@@ -46,22 +46,16 @@ def _secret(key, fallback=""):
     except Exception:
         return fallback
 
+# API 키는 secrets에서 자동 로드
+api_key = _secret("ANTHROPIC_API_KEY")
+gmail_addr = _secret("GMAIL_ADDRESS")
+gmail_pw = _secret("GMAIL_APP_PASSWORD")
+recv_addr = _secret("RECV_EMAIL")
+
 # ── 사이드바 ───────────────────────────────────────────────────
 with st.sidebar:
     st.title("📈 AI 주식 분석")
     st.caption(f"기준일: {get_last_trading_date()}")
-
-    api_key = st.text_input(
-        "Anthropic API Key",
-        value=_secret("ANTHROPIC_API_KEY"),
-        type="password",
-        placeholder="sk-ant-...",
-        help="AI 분석 기능에 필요. console.anthropic.com에서 발급"
-    )
-    if api_key:
-        st.success("API 키 설정됨 ✅")
-    else:
-        st.info("API 키 없어도 스캐너 사용 가능")
 
     st.divider()
     market_filter = st.selectbox(
@@ -72,17 +66,7 @@ with st.sidebar:
     top_n = st.slider("표시 종목 수", 10, 50, 20)
 
     st.divider()
-    with st.expander("📧 이메일 리포트 설정"):
-        gmail_addr = st.text_input("Gmail 주소", value=_secret("GMAIL_ADDRESS"),
-                                   placeholder="you@gmail.com", key="gmail_addr")
-        gmail_pw = st.text_input("앱 비밀번호", value=_secret("GMAIL_APP_PASSWORD"),
-                                  type="password", key="gmail_pw",
-                                  help="Gmail 앱 비밀번호 (일반 비밀번호 X)")
-        recv_addr = st.text_input("수신 이메일", value=_secret("RECV_EMAIL"),
-                                   placeholder="받을 주소", key="recv_addr")
-        if gmail_addr and gmail_pw:
-            st.success("이메일 설정됨 ✅")
-        st.caption("[앱 비밀번호 발급 방법](https://myaccount.google.com/apppasswords)")
+    st.caption("⚠️ 투자 손실의 책임은 투자자 본인에게 있습니다.")
 
     st.divider()
     st.caption("⚠️ 투자 손실의 책임은 투자자 본인에게 있습니다.")
