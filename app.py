@@ -284,7 +284,7 @@ with tab_high:
 # ══════════════════════════════════════════════════════════════
 with tab_ai:
     st.header("💡 AI 오늘의 추천 종목")
-    st.caption("버튼 하나로 전체 시장 스캔 후 Claude AI가 단타/스윙/중장기 추천 종목과 매수가·목표가·손절가를 제시합니다.")
+    st.caption("버튼 하나로 전체 시장 스캔 후 주식천재 하윤이가 단타/스윙/중장기 추천 종목과 매수가·목표가·손절가를 제시합니다.")
 
     run_ai = st.button("🔍 전체 스캔 + AI 분석 실행", type="primary", use_container_width=False)
 
@@ -317,7 +317,7 @@ with tab_ai:
                     summary_lines.append(f"[{label}] {row.get(name_col,'')}({row.get(ticker_col,'')}){chg_str}")
 
         market_news = get_naver_market_news(5)
-        with st.spinner("4/4 Claude AI 분석 중... (20~30초)"):
+        with st.spinner("4/4 주식천재 하윤이 분석 중... (20~30초)"):
             result = get_daily_top_picks(api_key, "\n".join(summary_lines),
                                          format_news_for_prompt(market_news))
         st.session_state.ai_picks = result
@@ -486,7 +486,7 @@ with tab_stock:
         if not api_key:
             st.info("API 키 입력 시 AI 매수가/목표가/손절가 분석 가능")
         else:
-            if st.button("🤖 Claude AI 심층 분석", type="primary"):
+            if st.button("🤖 주식천재 하윤이 심층 분석", type="primary"):
                 with st.spinner("분석 중..."):
                     result = analyze_single_stock(api_key, {
                         "종목명": name, "시장": "미국" if is_us else "국내",
