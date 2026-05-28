@@ -54,7 +54,7 @@ recv_addr = _secret("RECV_EMAIL")
 
 # ── 사이드바 ───────────────────────────────────────────────────
 with st.sidebar:
-    st.title("📈 AI 주식 분석")
+    st.title("💰 하윤아빠 부자되기")
     st.caption(f"기준일: {get_last_trading_date()}")
 
     st.divider()
@@ -64,9 +64,6 @@ with st.sidebar:
         index=0
     )
     top_n = st.slider("표시 종목 수", 10, 50, 20)
-
-    st.divider()
-    st.caption("⚠️ 투자 손실의 책임은 투자자 본인에게 있습니다.")
 
     st.divider()
     st.caption("⚠️ 투자 손실의 책임은 투자자 본인에게 있습니다.")
@@ -287,63 +284,70 @@ with tab_high:
 # ══════════════════════════════════════════════════════════════
 with tab_ai:
     st.header("💡 AI 오늘의 추천 종목")
+    st.caption("버튼 하나로 전체 시장 스캔 후 Claude AI가 단타/스윙/중장기 추천 종목과 매수가·목표가·손절가를 제시합니다.")
 
-    if not api_key:
-        st.warning("사이드바에서 API 키를 입력해주세요.")
-    else:
-        col_btn, col_desc = st.columns([1, 4])
-        with col_btn:
-            run_ai = st.button("AI 분석 실행", type="primary", use_container_width=True)
-        with col_desc:
-            st.caption("급등주 + 거래량이상 + 돌파직전 데이터를 종합해 Claude AI가 오늘의 유망 종목을 선정합니다.")
+    run_ai = st.button("🔍 전체 스캔 + AI 분석 실행", type="primary", use_container_width=False)
 
-        if run_ai:
-            # 가용한 스캐너 결과 모두 취합
-            all_data = {}
-            for key, label in [("hot_df", "급등주"), ("vol_df", "거래량이상"),
-                                ("break_df", "돌파직전"), ("pull_df", "눌림목")]:
-                if key in st.session_state and not st.session_state[key].empty:
-                    all_data[label] = st.session_state[key]
+    if run_ai:
+        mkt = get_market_code()
+        summary_lines = []
 
-            if not all_data:
-                st.warning("먼저 다른 탭에서 스캔을 실행해주세요.")
-            else:
-                summary_lines = []
-                for label, df in all_data.items():
-                    name_col = "종목명" if "종목명" in df.columns else "티커"
-                    ticker_col = "티커" if "티커" in df.columns else name_col
-                    for _, row in df.head(10).iterrows():
-                        chg = row.get("등락률", "")
-                        chg_str = f" 등락:{chg:.1f}%" if isinstance(chg, (int, float)) else ""
-                        summary_lines.append(
-                            f"[{label}] {row.get(name_col,'')}({row.get(ticker_col,'')}){chg_str}"
-                        )
+        with st.spinner("1/4 급등주 스캔 중..."):
+            hot = get_hot_stocks_us(top_n=20) if mkt == "미국" else get_hot_stocks_krx(market=mkt, top_n=20)
+            st.session_state.hot_df = hot
 
-                market_news = get_naver_market_news(5)
-                with st.spinner("Claude AI 분석 중... (15~20초)"):
-                    result = get_daily_top_picks(api_key, "\n".join(summary_lines),
-                                                 format_news_for_prompt(market_news))
-                st.session_state.ai_picks = result
+        with st.spinner("2/4 거래량 이상 스캔 중..."):
+            vol = scan_volume_anomaly(mkt, top_n)
+            st.session_state.vol_df = vol
 
-        if "ai_picks" in st.session_state:
-            picks = st.session_state.ai_picks
-            if "오류" in picks:
-                st.error(picks["오류"])
-            else:
-                if picks.get("시장요약"):
-                    st.info(f"📊 {picks['시장요약']}")
-                if picks.get("오늘주의사항"):
-                    st.warning(f"⚠️ {picks['오늘주의사항']}")
+        with st.spinner("3/4 돌파직전·눌림목 스캔 중..."):
+            brk = scan_breakout_imminent(mkt, top_n)
+            pull = scan_pullback(mkt, top_n)
+            st.session_state.break_df = brk
+            st.session_state.pull_df = pull
 
-                for pick in picks.get("추천종목", []):
-                    emoji = {"단타": "🔴", "스윙": "🟡", "중장기": "🟢"}.get(pick.get("전략", ""), "⚪")
-                    with st.expander(
-                        f"{pick.get('순위','')}위 | **{pick.get('종목명','')}** "
-                        f"({pick.get('티커','')}) {emoji} {pick.get('전략','')} "
-                        f"| 예상 {pick.get('예상수익률','')}",
-                        expanded=True
-                    ):
-                        st.write(pick.get("추천이유", ""))
+        # 전체 요약 텍스트 생성
+        for df, label in [(hot, "급등주"), (vol, "거래량이상"), (brk, "돌파직전"), (pull, "눌림목")]:
+            if df is not None and not df.empty:
+                name_col = "종목명" if "종목명" in df.columns else "티커"
+                ticker_col = "티커" if "티커" in df.columns else name_col
+                for _, row in df.head(8).iterrows():
+                    chg = row.get("등락률", "")
+                    chg_str = f" 등락:{chg:.1f}%" if isinstance(chg, (int, float)) else ""
+                    summary_lines.append(f"[{label}] {row.get(name_col,'')}({row.get(ticker_col,'')}){chg_str}")
+
+        market_news = get_naver_market_news(5)
+        with st.spinner("4/4 Claude AI 분석 중... (20~30초)"):
+            result = get_daily_top_picks(api_key, "\n".join(summary_lines),
+                                         format_news_for_prompt(market_news))
+        st.session_state.ai_picks = result
+
+    if "ai_picks" in st.session_state:
+        picks = st.session_state.ai_picks
+        if "오류" in picks:
+            st.error(picks["오류"])
+        else:
+            if picks.get("시장요약"):
+                st.info(f"📊 {picks['시장요약']}")
+            if picks.get("오늘주의사항"):
+                st.warning(f"⚠️ {picks['오늘주의사항']}")
+
+            for pick in picks.get("추천종목", []):
+                emoji = {"단타": "🔴", "스윙": "🟡", "중장기": "🟢"}.get(pick.get("전략", ""), "⚪")
+                with st.expander(
+                    f"{pick.get('순위','')}위 | **{pick.get('종목명','')}** "
+                    f"({pick.get('티커','')}) {emoji} {pick.get('전략','')} "
+                    f"| 예상 {pick.get('예상수익률','')}",
+                    expanded=True
+                ):
+                    # 매수가 / 목표가 / 손절가
+                    p1, p2, p3 = st.columns(3)
+                    p1.metric("💰 매수가", pick.get("매수가", "-"))
+                    p2.metric("🎯 목표가", pick.get("목표가", "-"))
+                    p3.metric("🛑 손절가", pick.get("손절가", "-"))
+                    st.write(f"**추천 이유:** {pick.get('추천이유', '')}")
+                    if pick.get("주의사항"):
+                        st.caption(f"⚠️ {pick.get('주의사항', '')}")
 
                 # 이메일 발송 버튼
                 st.divider()
