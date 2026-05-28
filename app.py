@@ -79,17 +79,17 @@ def get_market_code():
 # ── 탭 ────────────────────────────────────────────────────────
 tabs = st.tabs([
     "🔥 오늘 급등주",
+    "💡 하윤이의 추천종목",
     "👀 거래량 이상",
     "📐 돌파 직전",
     "📉 저점 매수",
     "🔄 눌림목",
     "🚀 52주 신고가",
-    "💡 하윤이의 추천종목",
     "🔍 종목 분석",
     "💬 AI 챗",
 ])
 
-tab_hot, tab_vol, tab_break, tab_over, tab_pull, tab_high, tab_ai, tab_stock, tab_chat = tabs
+tab_hot, tab_ai, tab_vol, tab_break, tab_over, tab_pull, tab_high, tab_stock, tab_chat = tabs
 
 
 # ── 공통: 스캐너 결과 표시 함수 ────────────────────────────────
@@ -286,7 +286,7 @@ with tab_ai:
     st.header("💡 하윤이의 추천 종목")
     st.caption("전체 시장 스캔 후 주식천재 하윤이가 단타/스윙/중장기 추천 종목과 진입 전략·매수가·목표가·손절가를 제시합니다.")
 
-    run_ai = st.button("🔍 전체 스캔 + AI 분석 실행", type="primary", use_container_width=False)
+    run_ai = st.button("🚀 하윤이 분석 시작 !", type="primary", use_container_width=False)
 
     if run_ai:
         mkt = get_market_code()
@@ -313,7 +313,7 @@ with tab_ai:
                 name_col = "종목명" if "종목명" in df.columns else "티커"
                 ticker_col = "티커" if "티커" in df.columns else name_col
                 price_col = "종가" if "종가" in df.columns else ("현재가" if "현재가" in df.columns else None)
-                for _, row in df.head(8).iterrows():
+                for _, row in df.head(5).iterrows():
                     chg = row.get("등락률", "")
                     chg_str = f" 등락:{chg:.1f}%" if isinstance(chg, (int, float)) else ""
                     price = row.get(price_col) if price_col else None
