@@ -22,8 +22,8 @@ from modules.scanner import (
 
 # ── 페이지 설정 ────────────────────────────────────────────────
 st.set_page_config(
-    page_title="AI 주식 분석 대시보드",
-    page_icon="📈",
+    page_title="하윤아빠 부자되기",
+    page_icon="💰",
     layout="wide",
     initial_sidebar_state="expanded"
 )
