@@ -323,7 +323,7 @@ with tab_ai:
                     )
 
         market_news = get_naver_market_news(5)
-        with st.spinner("4/4 주식천재 하윤이 분석 중... (20~30초)"):
+        with st.spinner("주식천재 하윤이가 분석중... (20~30초)"):
             result = get_daily_top_picks(api_key, "\n".join(summary_lines),
                                          format_news_for_prompt(market_news))
         st.session_state.ai_picks = result
