@@ -349,28 +349,6 @@ with tab_ai:
                     if pick.get("주의사항"):
                         st.caption(f"⚠️ {pick.get('주의사항', '')}")
 
-                # 이메일 발송 버튼
-                st.divider()
-                col_mail, col_info = st.columns([1, 3])
-                with col_mail:
-                    send_btn = st.button("📧 이메일로 받기", type="secondary", use_container_width=True)
-                with col_info:
-                    st.caption("사이드바 '이메일 리포트 설정'에서 Gmail 주소와 앱 비밀번호를 먼저 입력해주세요.")
-
-                if send_btn:
-                    g_addr = st.session_state.get("gmail_addr", "")
-                    g_pw = st.session_state.get("gmail_pw", "")
-                    r_addr = st.session_state.get("recv_addr", "") or g_addr
-                    if not g_addr or not g_pw:
-                        st.error("사이드바에서 Gmail 주소와 앱 비밀번호를 입력해주세요.")
-                    else:
-                        with st.spinner("이메일 발송 중..."):
-                            html = build_report_html(picks)
-                            ok, msg = send_daily_report(g_addr, g_pw, r_addr, html)
-                        if ok:
-                            st.success(f"✅ {r_addr} 로 리포트가 발송되었습니다!")
-                        else:
-                            st.error(f"❌ {msg}")
 
 
 # ══════════════════════════════════════════════════════════════
