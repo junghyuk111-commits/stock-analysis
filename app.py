@@ -306,15 +306,21 @@ with tab_ai:
             st.session_state.break_df = brk
             st.session_state.pull_df = pull
 
-        # 전체 요약 텍스트 생성
+        # 전체 요약 텍스트 생성 (현재가 포함)
+        currency = "$" if mkt == "미국" else "원"
         for df, label in [(hot, "급등주"), (vol, "거래량이상"), (brk, "돌파직전"), (pull, "눌림목")]:
             if df is not None and not df.empty:
                 name_col = "종목명" if "종목명" in df.columns else "티커"
                 ticker_col = "티커" if "티커" in df.columns else name_col
+                price_col = "종가" if "종가" in df.columns else ("현재가" if "현재가" in df.columns else None)
                 for _, row in df.head(8).iterrows():
                     chg = row.get("등락률", "")
                     chg_str = f" 등락:{chg:.1f}%" if isinstance(chg, (int, float)) else ""
-                    summary_lines.append(f"[{label}] {row.get(name_col,'')}({row.get(ticker_col,'')}){chg_str}")
+                    price = row.get(price_col) if price_col else None
+                    price_str = f" 현재가:{price:,.0f}{currency}" if price else ""
+                    summary_lines.append(
+                        f"[{label}] {row.get(name_col,'')}({row.get(ticker_col,'')}){price_str}{chg_str}"
+                    )
 
         market_news = get_naver_market_news(5)
         with st.spinner("4/4 주식천재 하윤이 분석 중... (20~30초)"):
