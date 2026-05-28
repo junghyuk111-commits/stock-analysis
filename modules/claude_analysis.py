@@ -3,6 +3,41 @@ import json
 import re
 
 
+def _parse_json_safe(text):
+    """Claude 응답에서 JSON을 최대한 안전하게 파싱"""
+    # 1차: 그대로 파싱
+    try:
+        return json.loads(text)
+    except Exception:
+        pass
+
+    # 2차: ```json ... ``` 블록 추출
+    code_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', text, re.DOTALL)
+    if code_match:
+        try:
+            return json.loads(code_match.group(1))
+        except Exception:
+            pass
+
+    # 3차: 첫 { 부터 마지막 } 까지 추출
+    start = text.find('{')
+    end = text.rfind('}')
+    if start != -1 and end != -1:
+        try:
+            return json.loads(text[start:end+1])
+        except Exception:
+            pass
+
+    # 4차: 줄바꿈 내 특수문자 제거 후 재시도
+    try:
+        cleaned = re.sub(r'[\x00-\x1f\x7f]', ' ', text[start:end+1])
+        return json.loads(cleaned)
+    except Exception:
+        pass
+
+    return {"오류": "AI 응답 파싱 실패 — 다시 시도해주세요", "원문": text[:300]}
+
+
 SYSTEM_PROMPT = """당신은 10년 경력의 전문 주식 애널리스트입니다.
 주어진 데이터를 바탕으로 냉정하고 객관적인 투자 분석을 제공합니다.
 항상 JSON 형식으로만 응답하고, 투자 손실 가능성도 명확히 언급하세요."""
@@ -69,11 +104,7 @@ def analyze_single_stock(api_key, stock_info):
             messages=[{"role": "user", "content": prompt}]
         )
         text = message.content[0].text.strip()
-        # JSON 파싱
-        json_match = re.search(r'\{.*\}', text, re.DOTALL)
-        if json_match:
-            return json.loads(json_match.group())
-        return json.loads(text)
+        return _parse_json_safe(text)
     except json.JSONDecodeError:
         return {"오류": "JSON 파싱 실패", "원문": text[:500]}
     except Exception as e:
@@ -119,15 +150,12 @@ def get_daily_top_picks(api_key, hot_stocks_summary, market_news=""):
     try:
         message = client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=1500,
+            max_tokens=2000,
             system=SYSTEM_PROMPT,
             messages=[{"role": "user", "content": prompt}]
         )
         text = message.content[0].text.strip()
-        json_match = re.search(r'\{.*\}', text, re.DOTALL)
-        if json_match:
-            return json.loads(json_match.group())
-        return json.loads(text)
+        return _parse_json_safe(text)
     except Exception as e:
         return {"오류": str(e)}
 
