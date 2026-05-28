@@ -1,0 +1,14 @@
+# API 키, 비밀번호 — 절대 GitHub에 올리면 안 됨
+.streamlit/secrets.toml
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.Python
+*.egg-info/
+
+# 기타
+.DS_Store
+Thumbs.db
