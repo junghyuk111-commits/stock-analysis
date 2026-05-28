@@ -84,7 +84,7 @@ tabs = st.tabs([
     "📉 저점 매수",
     "🔄 눌림목",
     "🚀 52주 신고가",
-    "💡 AI 추천",
+    "💡 하윤이의 추천종목",
     "🔍 종목 분석",
     "💬 AI 챗",
 ])
@@ -283,8 +283,8 @@ with tab_high:
 # TAB 7: AI 추천
 # ══════════════════════════════════════════════════════════════
 with tab_ai:
-    st.header("💡 AI 오늘의 추천 종목")
-    st.caption("버튼 하나로 전체 시장 스캔 후 주식천재 하윤이가 단타/스윙/중장기 추천 종목과 매수가·목표가·손절가를 제시합니다.")
+    st.header("💡 하윤이의 추천 종목")
+    st.caption("전체 시장 스캔 후 주식천재 하윤이가 단타/스윙/중장기 추천 종목과 진입 전략·매수가·목표가·손절가를 제시합니다.")
 
     run_ai = st.button("🔍 전체 스캔 + AI 분석 실행", type="primary", use_container_width=False)
 
@@ -340,13 +340,14 @@ with tab_ai:
 
             for pick in picks.get("추천종목", []):
                 emoji = {"단타": "🔴", "스윙": "🟡", "중장기": "🟢"}.get(pick.get("전략", ""), "⚪")
+                entry = pick.get("진입방법", "")
+                entry_badge = {"지금바로": "🟢 지금바로", "눌림목대기": "⏳ 눌림목대기", "분할매수": "📊 분할매수"}.get(entry, entry)
                 with st.expander(
                     f"{pick.get('순위','')}위 | **{pick.get('종목명','')}** "
                     f"({pick.get('티커','')}) {emoji} {pick.get('전략','')} "
-                    f"| 예상 {pick.get('예상수익률','')}",
+                    f"| {entry_badge}  | 예상 {pick.get('예상수익률','')}",
                     expanded=True
                 ):
-                    # 매수가 / 목표가 / 손절가
                     p1, p2, p3 = st.columns(3)
                     p1.metric("💰 매수가", pick.get("매수가", "-"))
                     p2.metric("🎯 목표가", pick.get("목표가", "-"))
