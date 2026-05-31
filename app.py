@@ -308,6 +308,7 @@ with tab_ai:
 
         # 전체 요약 텍스트 생성 (현재가 포함)
         currency = "$" if mkt == "미국" else "원"
+        price_map = {}  # 티커 → (현재가, currency) 저장
         for df, label in [(hot, "급등주"), (vol, "거래량이상"), (brk, "돌파직전"), (pull, "눌림목")]:
             if df is not None and not df.empty:
                 name_col = "종목명" if "종목명" in df.columns else "티커"
@@ -318,9 +319,13 @@ with tab_ai:
                     chg_str = f" 등락:{chg:.1f}%" if isinstance(chg, (int, float)) else ""
                     price = row.get(price_col) if price_col else None
                     price_str = f" 현재가:{price:,.0f}{currency}" if price else ""
+                    ticker = row.get(ticker_col, "")
+                    if price and ticker:
+                        price_map[ticker] = (price, currency)
                     summary_lines.append(
-                        f"[{label}] {row.get(name_col,'')}({row.get(ticker_col,'')}){price_str}{chg_str}"
+                        f"[{label}] {row.get(name_col,'')}({ticker}){price_str}{chg_str}"
                     )
+        st.session_state.price_map = price_map
 
         market_news = get_naver_market_news(5)
         with st.spinner("주식천재 하윤이가 분석중... (20~30초)"):
@@ -342,16 +347,28 @@ with tab_ai:
                 emoji = {"단타": "🔴", "스윙": "🟡", "중장기": "🟢"}.get(pick.get("전략", ""), "⚪")
                 entry = pick.get("진입방법", "")
                 entry_badge = {"지금바로": "🟢 지금바로", "눌림목대기": "⏳ 눌림목대기", "분할매수": "📊 분할매수"}.get(entry, entry)
+                # 현재가 조회
+                ticker = pick.get("티커", "")
+                price_info = st.session_state.get("price_map", {}).get(ticker)
+                current_price_str = ""
+                if price_info:
+                    cur_p, cur_c = price_info
+                    current_price_str = f"  |  조회시 현재가: {cur_p:,.0f}{cur_c}"
+
                 with st.expander(
                     f"{pick.get('순위','')}위 | **{pick.get('종목명','')}** "
-                    f"({pick.get('티커','')}) {emoji} {pick.get('전략','')} "
-                    f"| {entry_badge}  | 예상 {pick.get('예상수익률','')}",
+                    f"({ticker}) {emoji} {pick.get('전략','')} "
+                    f"| {entry_badge}  | 예상 {pick.get('예상수익률','')}{current_price_str}",
                     expanded=True
                 ):
-                    p1, p2, p3 = st.columns(3)
-                    p1.metric("💰 매수가", pick.get("매수가", "-"))
-                    p2.metric("🎯 목표가", pick.get("목표가", "-"))
-                    p3.metric("🛑 손절가", pick.get("손절가", "-"))
+                    p1, p2, p3, p4 = st.columns(4)
+                    if price_info:
+                        p1.metric("📌 조회시 현재가", f"{price_info[0]:,.0f}{price_info[1]}")
+                    else:
+                        p1.metric("📌 조회시 현재가", "-")
+                    p2.metric("💰 매수가", pick.get("매수가", "-"))
+                    p3.metric("🎯 목표가", pick.get("목표가", "-"))
+                    p4.metric("🛑 손절가", pick.get("손절가", "-"))
                     st.write(f"**추천 이유:** {pick.get('추천이유', '')}")
                     if pick.get("주의사항"):
                         st.caption(f"⚠️ {pick.get('주의사항', '')}")
