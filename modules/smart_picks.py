@@ -173,11 +173,13 @@ def scan_smart_picks(market="ALL", top_n=5):
             golden_cross = (ma5_prev < ma20_prev) and (ma5 >= ma20)
             above_ma20 = ma5 > ma20
 
-            # 펀더멘털 (가능한 경우)
+            # 펀더멘털
             per, roe = None, None
             try:
-                info = yf.Ticker(yf_t).fast_info
-                per = getattr(info, 'pe_ratio', None)
+                info = yf.Ticker(yf_t).info
+                per = info.get('trailingPE') or info.get('forwardPE')
+                roe_raw = info.get('returnOnEquity')
+                roe = round(roe_raw * 100, 1) if roe_raw else None
             except Exception:
                 pass
 
@@ -211,7 +213,7 @@ def scan_smart_picks(market="ALL", top_n=5):
 
     result = {}
     for strategy, col in [("단타", "단타점수"), ("스윙", "스윙점수"), ("중장기", "중장기점수")]:
-        top = df[df[col] >= 50].sort_values(col, ascending=False).head(top_n).copy()
+        top = df[df[col] >= 30].sort_values(col, ascending=False).head(top_n).copy()
         top = top.rename(columns={col: "점수"})
         result[strategy] = top.reset_index(drop=True)
 
