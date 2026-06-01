@@ -224,7 +224,7 @@ def build_smart_summary(picks_dict, currency="원"):
     for strategy, df in picks_dict.items():
         if df is None or df.empty:
             continue
-        for _, row in df.iterrows():
+        for _, row in df.head(8).iterrows():
             per_str = f" PER:{row.get('PER','N/A')}" if row.get('PER') != 'N/A' else ""
             lines.append(
                 f"[{strategy}후보] {row.get('종목명','')}({row.get('티커','')}) "

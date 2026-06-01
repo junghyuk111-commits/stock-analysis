@@ -330,7 +330,7 @@ with tab_smart:
         currency = "$" if mkt == "미국" else "원"
 
         with st.spinner("전 종목 점수 산출 중... (30~40초)"):
-            picks_dict = scan_smart_picks(mkt, top_n=5)
+            picks_dict = scan_smart_picks(mkt, top_n=10)
 
         if "오류" in picks_dict:
             st.error(picks_dict["오류"])
@@ -343,8 +343,8 @@ with tab_smart:
                 with cols[i]:
                     st.markdown(f"**{emoji} {strategy}**")
                     if not df.empty:
-                        show = df[["종목명", "점수", "등락률", "RSI"]].copy()
-                        st.dataframe(show, use_container_width=True, hide_index=True)
+                        show = df[["종목명", "점수", "등락률", "RSI", "거래량비율", "PER"]].copy()
+                        st.dataframe(show, use_container_width=True, hide_index=True, height=350)
                     else:
                         st.caption("해당 없음")
 
@@ -352,7 +352,7 @@ with tab_smart:
             market_news = get_naver_market_news(5)
             summary = build_smart_summary(picks_dict, currency)
 
-            with st.spinner("주식천재 하윤이가 심층 분석 중... (20~30초)"):
+            with st.spinner("하윤아빠가 심층 분석 중... (20~30초)"):
                 result = get_smart_picks_analysis(api_key, summary,
                                                    format_news_for_prompt(market_news))
             st.session_state.smart_result = result
