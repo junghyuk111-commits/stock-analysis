@@ -19,6 +19,8 @@ from modules.scanner import (
     scan_volume_anomaly, scan_breakout_imminent,
     scan_oversold, scan_pullback, scan_new_high
 )
+from modules.smart_picks import scan_smart_picks, build_smart_summary
+from modules.claude_analysis import get_smart_picks_analysis
 
 # ── 페이지 설정 ────────────────────────────────────────────────
 st.set_page_config(
@@ -80,13 +82,14 @@ def get_market_code():
 tabs = st.tabs([
     "🔥 오늘 급등주",
     "💡 하윤이의 추천종목",
+    "💎 하윤아빠의 추천종목",
     "📐 돌파 직전",
     "🔄 눌림목",
     "🔍 종목 분석",
     "💬 AI 챗",
 ])
 
-tab_hot, tab_ai, tab_break, tab_pull, tab_stock, tab_chat = tabs
+tab_hot, tab_ai, tab_smart, tab_break, tab_pull, tab_stock, tab_chat = tabs
 
 
 # ── 공통: 스캐너 결과 표시 함수 ────────────────────────────────
@@ -304,6 +307,88 @@ with tab_ai:
                     if pick.get("주의사항"):
                         st.caption(f"⚠️ {pick.get('주의사항', '')}")
 
+
+
+# ══════════════════════════════════════════════════════════════
+# TAB 💎: 하윤아빠의 추천종목
+# ══════════════════════════════════════════════════════════════
+with tab_smart:
+    st.header("💎 하윤아빠의 추천종목")
+    st.markdown("""
+    > 급등주 추격 ❌ — **재무 퀄리티 + 기술적 셋업 + 뉴스 촉매** 3박자가 맞는 종목만
+    > 단타 / 스윙 / 중장기 전략별로 각 2개씩, 총 6개 추천
+    """)
+
+    col1, col2 = st.columns([1, 4])
+    with col1:
+        run_smart = st.button("💎 분석 시작", type="primary", use_container_width=True)
+    with col2:
+        st.caption("전 종목을 단타/스윙/중장기 점수로 평가 → 70점↑ 후보만 Claude 심층 분석 → 전략별 최종 2개 선정")
+
+    if run_smart:
+        mkt = get_market_code()
+        currency = "$" if mkt == "미국" else "원"
+
+        with st.spinner("전 종목 점수 산출 중... (30~40초)"):
+            picks_dict = scan_smart_picks(mkt, top_n=5)
+
+        if "오류" in picks_dict:
+            st.error(picks_dict["오류"])
+        else:
+            # 점수 결과 미리보기
+            st.subheader("📊 전략별 점수 상위 후보")
+            cols = st.columns(3)
+            for i, (strategy, emoji) in enumerate([("단타", "🔴"), ("스윙", "🟡"), ("중장기", "🟢")]):
+                df = picks_dict.get(strategy, pd.DataFrame())
+                with cols[i]:
+                    st.markdown(f"**{emoji} {strategy}**")
+                    if not df.empty:
+                        show = df[["종목명", "점수", "등락률", "RSI"]].copy()
+                        st.dataframe(show, use_container_width=True, hide_index=True)
+                    else:
+                        st.caption("해당 없음")
+
+            # Claude 심층 분석
+            market_news = get_naver_market_news(5)
+            summary = build_smart_summary(picks_dict, currency)
+
+            with st.spinner("주식천재 하윤이가 심층 분석 중... (20~30초)"):
+                result = get_smart_picks_analysis(api_key, summary,
+                                                   format_news_for_prompt(market_news))
+            st.session_state.smart_result = result
+
+    if "smart_result" in st.session_state:
+        result = st.session_state.smart_result
+        if "오류" in result:
+            st.error(result["오류"])
+        else:
+            if result.get("시장한줄요약"):
+                st.info(f"📊 {result['시장한줄요약']}")
+
+            st.divider()
+            for strategy, emoji, color in [
+                ("단타", "🔴", "#ff6b6b"),
+                ("스윙", "🟡", "#ffd93d"),
+                ("중장기", "🟢", "#6bcb77")
+            ]:
+                picks = result.get(strategy, [])
+                if not picks:
+                    continue
+                st.markdown(f"### {emoji} {strategy} 추천")
+                for pick in picks:
+                    with st.expander(
+                        f"**{pick.get('종목명','')}** ({pick.get('티커','')}) "
+                        f"| 예상 {pick.get('예상수익률','')}",
+                        expanded=True
+                    ):
+                        p1, p2, p3, p4 = st.columns(4)
+                        p1.metric("📌 현재가", pick.get("현재가", "-"))
+                        p2.metric("💰 매수가", pick.get("매수가", "-"))
+                        p3.metric("🎯 목표가", pick.get("목표가", "-"))
+                        p4.metric("🛑 손절가", pick.get("손절가", "-"))
+                        st.write(f"**투자 근거:** {pick.get('투자근거', '')}")
+                        st.caption(f"⚠️ 리스크: {pick.get('리스크', '')}")
+                st.divider()
 
 
 # ══════════════════════════════════════════════════════════════

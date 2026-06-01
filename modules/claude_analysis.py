@@ -172,3 +172,45 @@ def chat_with_analyst(api_key, question, context=""):
         return message.content[0].text
     except Exception as e:
         return f"오류: {e}"
+
+
+def get_smart_picks_analysis(api_key, summary, market_news=""):
+    """
+    전략별 점수 기반 후보군을 Claude가 심층 분석
+    단타/스윙/중장기 각 2개씩 최종 추천
+    """
+    client = anthropic.Anthropic(api_key=api_key)
+
+    system = """당신은 10년 경력 전문 주식 애널리스트입니다.
+반드시 유효한 JSON만 출력하세요. 마크다운, 코드블록, 설명 절대 금지.
+문자열 안 줄바꿈은 \\n 사용."""
+
+    prompt = f"""다음은 전략별 점수로 필터링된 종목 후보입니다.
+각 전략에서 최종 2개씩 선정하고 투자 근거를 제시하세요.
+
+## 후보 종목 (점수 높을수록 해당 전략에 적합)
+{summary}
+
+## 시장 뉴스
+{market_news or '없음'}
+
+## 전략별 진입 방법
+- 단타: 당일 또는 내일 장 초반 진입. 매수가=현재가×0.99, 목표가=매수가×1.04, 손절=매수가×0.97
+- 스윙: 1~3주 보유. 매수가=현재가×0.98, 목표가=매수가×1.10, 손절=매수가×0.95
+- 중장기: 1~3개월 보유. 분할매수. 매수가=현재가×0.97, 목표가=매수가×1.20, 손절=매수가×0.92
+
+현재가 기준으로 매수가/목표가/손절가 계산. 학습 데이터 가격 절대 사용 금지.
+
+아래 JSON만 출력:
+{{"시장한줄요약":"string","단타":[{{"종목명":"string","티커":"string","현재가":"string","매수가":"string","목표가":"string","손절가":"string","예상수익률":"string","투자근거":"string","리스크":"string"}}],"스윙":[{{"종목명":"string","티커":"string","현재가":"string","매수가":"string","목표가":"string","손절가":"string","예상수익률":"string","투자근거":"string","리스크":"string"}}],"중장기":[{{"종목명":"string","티커":"string","현재가":"string","매수가":"string","목표가":"string","손절가":"string","예상수익률":"string","투자근거":"string","리스크":"string"}}]}}"""
+
+    try:
+        message = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=3000,
+            system=system,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return _parse_json_safe(message.content[0].text.strip())
+    except Exception as e:
+        return {"오류": str(e)}
