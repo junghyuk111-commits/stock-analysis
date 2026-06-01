@@ -113,6 +113,9 @@ def get_stock_history(ticker, market="KOSPI", days=90):
     period = f"{days}d" if days <= 60 else "3mo"
     try:
         df = yf.download(yf_ticker, period=period, auto_adjust=True, progress=False)
+        # 단일 종목도 MultiIndex로 올 수 있으므로 평탄화
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
         return df
     except Exception as e:
         print(f"[KRX] 히스토리 오류 {ticker}: {e}")

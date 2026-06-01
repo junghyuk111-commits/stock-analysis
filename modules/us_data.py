@@ -72,6 +72,8 @@ def get_us_stock_history(ticker, period="3mo"):
     try:
         t = yf.Ticker(ticker)
         df = t.history(period=period)
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
         return df
     except Exception as e:
         print(f"[US] 히스토리 오류 {ticker}: {e}")
