@@ -80,16 +80,13 @@ def get_market_code():
 tabs = st.tabs([
     "🔥 오늘 급등주",
     "💡 하윤이의 추천종목",
-    "👀 거래량 이상",
     "📐 돌파 직전",
-    "📉 저점 매수",
     "🔄 눌림목",
-    "🚀 52주 신고가",
     "🔍 종목 분석",
     "💬 AI 챗",
 ])
 
-tab_hot, tab_ai, tab_vol, tab_break, tab_over, tab_pull, tab_high, tab_stock, tab_chat = tabs
+tab_hot, tab_ai, tab_break, tab_pull, tab_stock, tab_chat = tabs
 
 
 # ── 공통: 스캐너 결과 표시 함수 ────────────────────────────────
@@ -170,28 +167,6 @@ with tab_hot:
 
 
 # ══════════════════════════════════════════════════════════════
-# TAB 2: 거래량 이상 감지
-# ══════════════════════════════════════════════════════════════
-with tab_vol:
-    st.header("👀 거래량 이상 감지")
-    st.markdown("""
-    > **주가는 아직 조용한데 거래량이 평소의 2배 이상** — 세력 매집 가능성
-    > 급등 전 가장 먼저 나타나는 신호. 관심 종목으로 등록해두고 지켜보기
-    """)
-    st.info("💡 **활용법:** 이 종목들을 매일 체크 → 주가까지 움직이기 시작하면 매수 고려")
-
-    if run_button("거래량 이상 스캔", "run_vol"):
-        with st.spinner("60일 데이터 분석 중... (30초 소요)"):
-            st.session_state.vol_df = scan_volume_anomaly(get_market_code(), top_n)
-
-    show_scanner_result(
-        st.session_state.get("vol_df"),
-        "20일 평균 대비 거래량 2배↑ & 주가 변동 3% 미만",
-        "vol", "거래량비율(20일)"
-    )
-
-
-# ══════════════════════════════════════════════════════════════
 # TAB 3: 돌파 직전
 # ══════════════════════════════════════════════════════════════
 with tab_break:
@@ -214,28 +189,6 @@ with tab_break:
 
 
 # ══════════════════════════════════════════════════════════════
-# TAB 4: 저점 매수 (역발상)
-# ══════════════════════════════════════════════════════════════
-with tab_over:
-    st.header("📉 저점 매수 (역발상)")
-    st.markdown("""
-    > **RSI 38 이하** + **52주 저점 20% 이내** — 더 떨어지기 어려운 구간
-    > 단, 추가 하락 가능성 있으므로 분할 매수 필수
-    """)
-    st.warning("⚠️ **주의:** 하락 추세 종목은 RSI가 낮아도 더 떨어질 수 있습니다. 재무가 괜찮은 종목만 고려하세요.")
-
-    if run_button("저점 종목 스캔", "run_over"):
-        with st.spinner("분석 중..."):
-            st.session_state.over_df = scan_oversold(get_market_code(), top_n)
-
-    show_scanner_result(
-        st.session_state.get("over_df"),
-        "RSI 38↓ & 52주 저점 20% 이내",
-        "over", "RSI"
-    )
-
-
-# ══════════════════════════════════════════════════════════════
 # TAB 5: 눌림목
 # ══════════════════════════════════════════════════════════════
 with tab_pull:
@@ -254,28 +207,6 @@ with tab_pull:
         st.session_state.get("pull_df"),
         "추세 유지 + 고점 대비 -3~-15% 조정 중",
         "pull"
-    )
-
-
-# ══════════════════════════════════════════════════════════════
-# TAB 6: 52주 신고가
-# ══════════════════════════════════════════════════════════════
-with tab_high:
-    st.header("🚀 52주 신고가 돌파")
-    st.markdown("""
-    > 저항선이 모두 사라진 구간 — **이론상 위로 막히는 가격이 없음**
-    > 모멘텀 투자의 핵심 신호
-    """)
-    st.info("💡 **활용법:** 신고가 돌파 + 거래량 폭발 시 추격 매수 / 단, 직후 눌림목에서 재진입이 더 안전")
-
-    if run_button("신고가 스캔", "run_high"):
-        with st.spinner("분석 중..."):
-            st.session_state.high_df = scan_new_high(get_market_code(), top_n)
-
-    show_scanner_result(
-        st.session_state.get("high_df"),
-        "52주 신고가 돌파 또는 1% 이내 접근",
-        "high"
     )
 
 
